@@ -1,0 +1,66 @@
+
+# Unique name for this workflow
+name: Pull Request Workflow
+
+# Definition when the workflow should run
+on:
+    workflow_dispatch:
+    pull_request:
+         types: [opened, edited, synchronize, reopened]
+
+# Jobs to be executed
+jobs:
+    # Dummy job used to skip CI run on automated PRs  my-job:
+      my-job:
+        runs-on: ubuntu-latest
+        environment: develop 
+        steps: 
+            - name: Checkout
+              uses: actions/checkout@v4
+              with:
+                  fetch-depth: 2
+                  
+            - name: Get changed files
+              id: changed-files
+              run: |
+                 echo "changed_files=$(git diff --name-only -r HEAD^1 HEAD | xargs)" >> $GITHUB_OUTPUT
+            
+            - name: List changed files
+              run: |
+                 declare -a fileSet 
+                 declare -a fileSetApex 
+                 for file in ${{ steps.changed-files.outputs.changed_files }}
+                    do  
+                        fileSetApex=[`basename ${file%.*}`];
+                        if [[ $file = *test || $file = *Test ]]
+                            then 
+                                fileSet=["basename${file}"];
+                        fi
+                    done
+                    echo "$fileSet"
+                    echo "$fileSetApex"
+                    
+            - name : 'Install Salesforce CLI'
+              run: |
+                  npm install @salesforce/cli --location=global
+                  nodeInstallPath=$(npm config get prefix)
+                  echo "$nodeInstallPath/bin" >> $GITHUB_PATH
+                  sf --version
+                       
+            - name: 'Get Authorization Details'
+              shell: bash
+              run: |
+                  echo ${{ secrets.DEVHUB_SFDX_DEVELOP_SECRET }} > ./DEVHUB_SFDX_URL.txt                 
+                  secretFileSize=$(wc -c "SalesforceCICD/DEVHUB_SFDX_URL.txt" | awk '{print $1}')
+                  if [ $secretFileSize == 1 ]; then
+                      echo "Missing DEVHUB_SFDX_URL secret. Is this workflow running on a fork?";
+                      exit 1;
+                  fi
+
+            - name: 'Authenticate Dev Hub'
+              run: sf org login sfdx-url -f ./DEVHUB_SFDX_URL.txt -a devhub -d
+
+            - name: 'Run Apex tests'
+              run: sf apex test run -c -r human -d ./tests/apex -w 20 
+                    
+           
