@@ -11,7 +11,7 @@ on:
 # Jobs to be executed
 jobs:
     # Dummy job used to skip CI run on automated PRs  my-job:
-      my-job:
+      setupjob:
         runs-on: ubuntu-latest
         environment: develop 
         steps: 
@@ -27,21 +27,6 @@ jobs:
                  declare -a fileSet 
                  declare -a fileSetApex 
                  for file in $(git diff --name-only -r HEAD^1 HEAD | xargs)
-                    do  
-                        fileSetApex=[`basename ${file%.*}`];
-                        if [[ $file = *test || $file = *Test ]]
-                            then 
-                                fileSet=["basename${file}"];
-                        fi
-                    done
-                    echo "$fileSet"
-                    echo "$fileSetApex"
-
-            - name: List changed files
-              run: |
-                 declare -a fileSet 
-                 declare -a fileSetApex 
-                 for file in ${{ steps.changed-files.outputs.changed_files }}
                     do  
                         fileSetApex=[`basename ${file%.*}`];
                         if [[ $file = *test || $file = *Test ]]
