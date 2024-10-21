@@ -1,6 +1,6 @@
 # Salesforce CI/CD Implementation 
 
-  Docker Containerization and Github Actions
+  Docker Containerization and Github Actions using Container registry
 
 ## Solution Purpose:
 
